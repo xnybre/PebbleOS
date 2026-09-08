@@ -938,3 +938,20 @@ static int prv_cmd_app_active(const struct pbl_shell *sh, size_t argc, char **ar
 PBL_SHELL_SUBCMD_ADD(sub_app, active, NULL, "Show the running app metadata", prv_cmd_app_active, 0,
                      0);
 #endif
+DEFINE_SYSCALL(bool, sys_app_launch, const Uuid *uuid) {
+  if (PRIVILEGE_WAS_ELEVATED) {
+    syscall_assert_userspace_buffer(uuid, sizeof(*uuid));
+  }
+
+  const AppInstallId id = app_install_get_id_for_uuid(uuid);
+  if (id == INSTALL_ID_INVALID) {
+    return false;
+  }
+
+  app_manager_put_launch_app_event(&(AppLaunchEventConfig){
+      .id = id,
+      .common.reason = APP_LAUNCH_USER,
+  });
+
+  return true;
+}

@@ -259,3 +259,7 @@ void app_event_loop_common(void) {
 void app_event_loop(void) {
   app_event_loop_common();
 }
+
+bool app_launch(const Uuid *uuid) {
+  return sys_app_launch(uuid);
+}

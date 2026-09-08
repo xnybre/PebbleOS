@@ -5,6 +5,7 @@
 
 #include "applib/graphics/gtypes.h"
 #include "process_management/app_install_types.h"
+#include "pbl/util/uuid.h"
 
 //! @file app.h
 //!
@@ -24,6 +25,8 @@ void app_event_loop_common(void);
 //! The event loop for C apps, to be used in app's main().
 //! Will block until the app is ready to exit.
 void app_event_loop(void);
+
+bool app_launch(const Uuid *uuid);
 
 //! @internal
 //! Get the AppInstallId for the current app or worker
