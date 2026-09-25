@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <stddef.h>
+
 #include "applib/graphics/gtypes.h"
 #include "process_management/app_install_types.h"
 #include "pbl/util/uuid.h"
@@ -27,6 +29,9 @@ void app_event_loop_common(void);
 void app_event_loop(void);
 
 bool app_launch(const Uuid *uuid);
+
+uint16_t app_get_installed_app_count(void);
+bool app_get_installed_app(uint16_t index, Uuid *uuid, char *name, size_t name_size);
 
 //! @internal
 //! Get the AppInstallId for the current app or worker

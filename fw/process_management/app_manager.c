@@ -879,6 +879,70 @@ bool app_manager_is_app_supported(const PebbleProcessMd *md) {
   return prv_get_app_segment_size(md) > 0;
 }
 
+
+typedef struct {
+  uint16_t count;
+} InstalledAppCountContext;
+
+typedef struct {
+  uint16_t wanted_index;
+  uint16_t current_index;
+  bool found;
+  Uuid uuid;
+  char name[APP_NAME_SIZE_BYTES];
+} InstalledAppLookupContext;
+
+static bool prv_is_launcher_app(const AppInstallEntry *entry) {
+  if (app_install_entry_is_watchface(entry)) {
+    return false;
+  }
+
+  if (app_install_entry_is_quick_launch_visible_only(entry)) {
+    return false;
+  }
+
+  return true;
+}
+
+static bool prv_count_installed_app(AppInstallEntry *entry, void *data) {
+  InstalledAppCountContext *context = data;
+
+  if (prv_is_launcher_app(entry)) {
+    ++context->count;
+  }
+
+  return true;
+}
+
+static bool prv_find_installed_app(AppInstallEntry *entry, void *data) {
+  InstalledAppLookupContext *context = data;
+
+  /*
+   * AppDB enumeration does not honor the callback return value, so once
+   * we've found the requested entry, ignore all subsequent entries.
+   */
+  if (context->found) {
+    return true;
+  }
+
+  if (!prv_is_launcher_app(entry)) {
+    return true;
+  }
+
+  if (context->current_index != context->wanted_index) {
+    ++context->current_index;
+    return true;
+  }
+
+  context->uuid = entry->uuid;
+  strncpy(context->name, entry->name, sizeof(context->name) - 1);
+  context->name[sizeof(context->name) - 1] = '\0';
+  context->found = true;
+
+  return false;
+}
+
+
 // -------------------------------------------------------------------------------------------
 /*!
   @brief User mode access to its UUID.
@@ -952,6 +1016,52 @@ DEFINE_SYSCALL(bool, sys_app_launch, const Uuid *uuid) {
       .id = id,
       .common.reason = APP_LAUNCH_USER,
   });
+
+  return true;
+}
+
+DEFINE_SYSCALL(uint16_t, sys_app_get_installed_app_count, void) {
+  InstalledAppCountContext context = {
+    .count = 0,
+  };
+
+  app_install_enumerate_entries(prv_count_installed_app, &context);
+
+  return context.count;
+}
+
+DEFINE_SYSCALL(bool, sys_app_get_installed_app, uint16_t index, Uuid *uuid, char *name,
+               size_t name_size) {
+  if (!uuid || !name || name_size == 0) {
+    return false;
+  }
+
+  if (PRIVILEGE_WAS_ELEVATED) {
+    syscall_assert_userspace_buffer(uuid, sizeof(*uuid));
+    syscall_assert_userspace_buffer(name, name_size);
+  }
+
+  InstalledAppLookupContext context = {
+    .wanted_index = index,
+    .current_index = 0,
+    .found = false,
+  };
+
+  app_install_enumerate_entries(prv_find_installed_app, &context);
+
+  if (!context.found) {
+    return false;
+  }
+
+  *uuid = context.uuid;
+
+  size_t length = strlen(context.name);
+  if (length >= name_size) {
+    length = name_size - 1;
+  }
+
+  memcpy(name, context.name, length);
+  name[length] = '\0';
 
   return true;
 }

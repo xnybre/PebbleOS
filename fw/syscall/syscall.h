@@ -107,6 +107,8 @@ bool sys_speaker_is_muted(void);
 void sys_get_app_uuid(Uuid *uuid);
 bool sys_app_is_watchface(void);
 bool sys_app_launch(const Uuid *uuid);
+uint16_t sys_app_get_installed_app_count(void);
+bool sys_app_get_installed_app(uint16_t index, Uuid *uuid, char *name, size_t name_size);
 AppInstallId sys_app_manager_get_current_app_id(void);
 AppInstallId sys_worker_manager_get_current_worker_id(void);
 

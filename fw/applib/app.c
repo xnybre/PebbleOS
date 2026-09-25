@@ -263,3 +263,11 @@ void app_event_loop(void) {
 bool app_launch(const Uuid *uuid) {
   return sys_app_launch(uuid);
 }
+
+uint16_t app_get_installed_app_count(void) {
+  return sys_app_get_installed_app_count();
+}
+
+bool app_get_installed_app(uint16_t index, Uuid *uuid, char *name, size_t name_size) {
+  return sys_app_get_installed_app(index, uuid, name, name_size);
+}
